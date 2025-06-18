@@ -1,3 +1,4 @@
+# To download the Jar, Navigate to `Actions -> Build And Create Artifacts -> Your desired build -> Artifacts -> Download`
 <p align="center">
     <img src="https://raw.githubusercontent.com/IntellectualSites/Assets/main/plugins/PlotSquared/PlotSquared.svg" width="250">
 </p>
