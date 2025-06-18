@@ -1,33 +1,40 @@
-name: Build And Create Artifacts
+name: Build and Upload Main JAR
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]   # Change to 'main' if needed
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
+  workflow_dispatch:       # Allow manual run
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout your fork
       uses: actions/checkout@v4
 
     - name: Set up Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '17'
+        java-version: '17'   # Change if using a different version
 
-    - name: Grant execute permission for Gradle
-      run: chmod +x gradlew
+    - name: Grant execute permission for Gradle wrapper
+      run: chmod +x ./gradlew
 
-    - name: Build with Gradle
+    - name: Build the project
       run: ./gradlew build
 
-    - name: Upload artifact (JAR)
+    - name: List all JARs for debug
+      run: ls -lh build/libs
+
+    - name: Upload main JAR only (exclude sources/javadoc)
       uses: actions/upload-artifact@v4
       with:
-        name: PlotSquared
-        path: build/libs/*.jar
+        name: main-jar
+        path: |
+          build/libs/*.jar
+          !build/libs/*-sources.jar
+          !build/libs/*-javadoc.jar
