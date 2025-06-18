@@ -2,54 +2,69 @@ name: Build and Release PlotSquared
 
 on:
   push:
+    branches:
+      - main
     tags:
-      - 'v*'   # runs only on version tags like v7.5.4
-  workflow_dispatch:
+      - 'v*'  # trigger on version tags like v1.2.3
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write   # needed for creating releases
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-
-    - name: Setup JDK 21
-      uses: actions/setup-java@v4
       with:
+        fetch-depth: 0  # full history for tags
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
         java-version: 21
-        distribution: temurin
+        cache: gradle
 
-    - name: Make Gradle Wrapper executable
-      run: chmod +x ./gradlew
+    - name: Build shadow JAR for Bukkit
+      run: ./gradlew :Bukkit:shadowJar
 
-    - name: Build shadow JARs for all modules
-      run: ./gradlew shadowJar --info
+    - name: List JAR files in Bukkit build/libs (debug)
+      run: ls -lh Bukkit/build/libs/
 
-    - name: Find and list all JAR files (debug)
-      run: find . -type f -name "*.jar" -exec ls -lh {} \;
-
-    - name: Upload plotsquared-bukkit fat JAR artifact
+    - name: Upload shadow JAR artifact
       uses: actions/upload-artifact@v4
       with:
         name: plotsquared-fat-jar
-        path: |
-          plotsquared-bukkit/build/libs/*.jar
-          !plotsquared-bukkit/build/libs/*-sources.jar
-          !plotsquared-bukkit/build/libs/*-javadoc.jar
+        path: Bukkit/build/libs/plotsquared-bukkit-*.jar
 
-    - name: Create GitHub Release with fat JAR
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: Download shadow JAR artifact
+      uses: actions/download-artifact@v4
       with:
-        name: PlotSquared ${{ github.ref_name }}
+        name: plotsquared-fat-jar
+        path: ./artifact
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      with:
         tag_name: ${{ github.ref_name }}
-        files: |
-          plotsquared-bukkit/build/libs/*.jar
-          !plotsquared-bukkit/build/libs/*-sources.jar
-          !plotsquared-bukkit/build/libs/*-javadoc.jar
+        release_name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload JAR to Release
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifact/plotsquared-bukkit-*.jar
+        asset_name: plotsquared-bukkit-${{ github.ref_name }}.jar
+        asset_content_type: application/java-archive
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
