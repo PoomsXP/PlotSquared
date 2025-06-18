@@ -3,8 +3,7 @@ name: Build and Release PlotSquared
 on:
   push:
     tags:
-      - 'v*'  # Trigger only on version tags like v7.5.4
-
+      - 'v*'   # runs only on version tags like v7.5.4
   workflow_dispatch:
 
 jobs:
@@ -12,28 +11,28 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # Required for creating releases
+      contents: write   # needed for creating releases
 
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 21
+    - name: Setup JDK 21
       uses: actions/setup-java@v4
       with:
-        java-version: '21'
-        distribution: 'temurin'
+        java-version: 21
+        distribution: temurin
 
-    - name: Grant execute permission for Gradle wrapper
+    - name: Make Gradle Wrapper executable
       run: chmod +x ./gradlew
 
-    - name: Build shadow JAR
-      run: ./gradlew :plotsquared-bukkit:shadowJar
+    - name: Build shadow JARs for all modules
+      run: ./gradlew shadowJar --info
 
-    - name: List JARs
-      run: ls -lh plotsquared-bukkit/build/libs
+    - name: Find and list all JAR files (debug)
+      run: find . -type f -name "*.jar" -exec ls -lh {} \;
 
-    - name: Upload artifact
+    - name: Upload plotsquared-bukkit fat JAR artifact
       uses: actions/upload-artifact@v4
       with:
         name: plotsquared-fat-jar
@@ -42,9 +41,9 @@ jobs:
           !plotsquared-bukkit/build/libs/*-sources.jar
           !plotsquared-bukkit/build/libs/*-javadoc.jar
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
+    - name: Create GitHub Release with fat JAR
       if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
       with:
         name: PlotSquared ${{ github.ref_name }}
         tag_name: ${{ github.ref_name }}
