@@ -1,3 +1,5 @@
+name: Build & Release
+
 on:
   workflow_dispatch:
   push:
@@ -10,6 +12,7 @@ jobs:
 
     outputs:
       version: ${{ steps.version.outputs.version }}
+      artifact-path: ${{ steps.artifact.outputs.file }}
 
     steps:
       - name: Checkout repository
@@ -31,13 +34,18 @@ jobs:
         id: version
         run: |
           VERSION=$(grep -Po '(?<=version = ")[^"]+' build.gradle.kts)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Escape %, \n, \r for GitHub Actions
+          ESCAPED_VERSION=${VERSION//'%'/'%25'}
+          ESCAPED_VERSION=${ESCAPED_VERSION//$'\n'/'%0A'}
+          ESCAPED_VERSION=${ESCAPED_VERSION//$'\r'/'%0D'}
+          echo "version=$ESCAPED_VERSION" >> $GITHUB_OUTPUT
 
       - name: Find Bukkit JAR artifact
         id: artifact
         run: |
           FILE=$(ls Project/Bukkit/build/libs/plotsquared-bukkit-*.jar | grep -v "sources")
           echo "file=$FILE" >> $GITHUB_OUTPUT
+          echo "Found JAR: $FILE"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
