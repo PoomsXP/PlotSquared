@@ -17,24 +17,24 @@ jobs:
 
       - name: Add upstream remote
         run: |
-          git remote add upstream https://github.com/ORIGINAL_OWNER/ORIGINAL_REPO.git
+          git remote add upstream https://github.com/IntellectualSites/PlotSquared
           git fetch upstream
 
       - name: Merge upstream/main but keep workflows
         run: |
-          # Stash your workflows directory first
+          # Stash workflows directory
           mkdir -p temp
           cp -r .github/workflows temp/workflows
 
-          # Reset everything to upstream's main branch
+          # Hard reset to upstream's main
           git reset --hard upstream/main
 
-          # Restore your workflows folder
+          # Restore workflows
           rm -rf .github/workflows
           mkdir -p .github
           cp -r temp/workflows .github/workflows
 
-          # Clean up temp folder
+          # Cleanup
           rm -rf temp
 
       - name: Commit changes if needed
@@ -47,7 +47,6 @@ jobs:
           fi
 
       - name: Push changes
-        run: |
-          git push origin HEAD:main
+        run: git push origin HEAD:main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
