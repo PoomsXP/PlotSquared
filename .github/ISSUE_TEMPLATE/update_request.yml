@@ -1,0 +1,19 @@
+name: Update request
+description: Request an update
+labels: 'Update Request'
+
+body:
+
+  - type: textarea
+    attributes:
+      label: What version of the plugin should we update to?
+      description: Plugin Version (ex. v7.5.10)
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Why do you need this update?
+      description: Please provide information below
+    validations:
+      required: true
