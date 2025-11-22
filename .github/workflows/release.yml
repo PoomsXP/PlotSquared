@@ -43,7 +43,14 @@ jobs:
       - name: Find Bukkit JAR artifact
         id: artifact
         run: |
-          FILE=$(ls Project/Bukkit/build/libs/plotsquared-bukkit-*.jar | grep -v "sources")
+          # Find first matching JAR (ignore -sources.jar)
+          FILE=$(ls Bukkit/build/libs/plotsquared-bukkit-*.jar 2>/dev/null | grep -v "sources" | head -n1)
+
+          if [ -z "$FILE" ]; then
+            echo "No Bukkit JAR found!"
+            exit 1
+          fi
+
           echo "file=$FILE" >> $GITHUB_OUTPUT
           echo "Found JAR: $FILE"
 
