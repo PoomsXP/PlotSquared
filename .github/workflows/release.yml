@@ -12,7 +12,8 @@ jobs:
 
     outputs:
       version: ${{ steps.version.outputs.version }}
-      artifact-path: ${{ steps.artifact.outputs.file }}
+      release_tag: ${{ steps.version.outputs.release_tag }}
+      artifact_path: ${{ steps.artifact.outputs.file }}
 
     steps:
       - name: Checkout repository
@@ -33,24 +34,28 @@ jobs:
       - name: Extract version from build.gradle.kts
         id: version
         run: |
+          # Extract version string
           VERSION=$(grep -Po '(?<=version = ")[^"]+' build.gradle.kts)
-          # Escape %, \n, \r for GitHub Actions
-          ESCAPED_VERSION=${VERSION//'%'/'%25'}
-          ESCAPED_VERSION=${ESCAPED_VERSION//$'\n'/'%0A'}
-          ESCAPED_VERSION=${ESCAPED_VERSION//$'\r'/'%0D'}
-          echo "version=$ESCAPED_VERSION" >> $GITHUB_OUTPUT
+          VERSION=$(echo "$VERSION" | xargs)    # trim whitespace
+          VERSION=${VERSION//$'\n'/}             # remove newlines
+          VERSION=${VERSION//$'\r'/}             # remove carriage returns
+
+          # Remove -SNAPSHOT for release tag
+          RELEASE_TAG=${VERSION/-SNAPSHOT/}
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+          echo "Release tag: $RELEASE_TAG"
 
       - name: Find Bukkit JAR artifact
         id: artifact
         run: |
-          # Find first matching JAR (ignore -sources.jar)
           FILE=$(ls Bukkit/build/libs/plotsquared-bukkit-*.jar 2>/dev/null | grep -v "sources" | head -n1)
-
           if [ -z "$FILE" ]; then
             echo "No Bukkit JAR found!"
             exit 1
           fi
-
           echo "file=$FILE" >> $GITHUB_OUTPUT
           echo "Found JAR: $FILE"
 
@@ -74,8 +79,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.build.outputs.version }}
-          name: Release v${{ needs.build.outputs.version }}
+          tag_name: v${{ needs.build.outputs.release_tag }}
+          name: Release v${{ needs.build.outputs.release_tag }}
           files: "*.jar"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
