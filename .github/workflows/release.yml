@@ -34,13 +34,12 @@ jobs:
       - name: Extract version from build.gradle.kts
         id: version
         run: |
-          # Extract version string
           VERSION=$(grep -Po '(?<=version = ")[^"]+' build.gradle.kts)
-          VERSION=$(echo "$VERSION" | xargs)    # trim whitespace
-          VERSION=${VERSION//$'\n'/}             # remove newlines
-          VERSION=${VERSION//$'\r'/}             # remove carriage returns
+          VERSION=$(echo "$VERSION" | xargs)       # trim whitespace
+          VERSION=${VERSION//$'\n'/}                # remove newlines
+          VERSION=${VERSION//$'\r'/}                # remove carriage returns
 
-          # Remove -SNAPSHOT for release tag
+          # Strip -SNAPSHOT for release tag
           RELEASE_TAG=${VERSION/-SNAPSHOT/}
 
           echo "version=$VERSION" >> $GITHUB_OUTPUT
