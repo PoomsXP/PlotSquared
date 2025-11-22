@@ -12,7 +12,7 @@ jobs:
 
     outputs:
       version: ${{ steps.version.outputs.version }}
-      artifact_path: ${{ steps.artifact.outputs.file }}
+      artifact-path: ${{ steps.artifact.outputs.file }}
 
     steps:
       - name: Checkout repository
@@ -30,25 +30,29 @@ jobs:
       - name: Build project
         run: ./gradlew build
 
-      - name: Extract and clean version
+      - name: Extract version from build.gradle.kts
         id: version
         run: |
-          RAW_VERSION=$(grep -Po '(?<=version = ")[^"]+' build.gradle.kts)
-          # Remove trailing ${…} patterns
-          CLEAN_VERSION=$(echo "$RAW_VERSION" | sed 's/\$\{.*\}//g')
-          # Remove whitespace and newlines
-          CLEAN_VERSION=$(echo "$CLEAN_VERSION" | tr -d '[:space:]')
-          echo "version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
-          echo "Extracted version: $CLEAN_VERSION"
+          # Extract the version string from build.gradle.kts
+          VERSION=$(grep -Po '(?<=version = ")[^"]+' build.gradle.kts)
+          VERSION=$(echo "$VERSION" | sed 's/\$\{.*\}//g' | xargs)
+          ESCAPED_VERSION=${VERSION//'%'/'%25'}
+          ESCAPED_VERSION=${ESCAPED_VERSION//$'\n'/'%0A'}
+          ESCAPED_VERSION=${ESCAPED_VERSION//$'\r'/'%0D'}
+          echo "version=$ESCAPED_VERSION" >> $GITHUB_OUTPUT
+
 
       - name: Find Bukkit JAR artifact
         id: artifact
         run: |
+          # Find first matching JAR (ignore -sources.jar)
           FILE=$(ls Bukkit/build/libs/plotsquared-bukkit-*.jar 2>/dev/null | grep -v "sources" | head -n1)
+
           if [ -z "$FILE" ]; then
             echo "No Bukkit JAR found!"
             exit 1
           fi
+
           echo "file=$FILE" >> $GITHUB_OUTPUT
           echo "Found JAR: $FILE"
 
@@ -63,10 +67,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download artifact
+      - name: Download built artifact
         uses: actions/download-artifact@v4
         with:
           name: plotsquared-bukkit
