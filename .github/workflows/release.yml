@@ -30,14 +30,16 @@ jobs:
       - name: Build project
         run: ./gradlew build
 
-      - name: Extract version from build.gradle.kts
+      - name: Extract and clean version
         id: version
         run: |
-          VERSION=$(grep -Po '(?<=version = ")[^"]+' build.gradle.kts | tr -d '[:space:]')
-          # Remove any accidental ${…} just in case
-          VERSION=$(echo "$VERSION" | sed 's/\$\{.*\}//g')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Extracted version: $VERSION"
+          RAW_VERSION=$(grep -Po '(?<=version = ")[^"]+' build.gradle.kts)
+          # Remove trailing ${…} patterns
+          CLEAN_VERSION=$(echo "$RAW_VERSION" | sed 's/\$\{.*\}//g')
+          # Remove whitespace and newlines
+          CLEAN_VERSION=$(echo "$CLEAN_VERSION" | tr -d '[:space:]')
+          echo "version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $CLEAN_VERSION"
 
       - name: Find Bukkit JAR artifact
         id: artifact
