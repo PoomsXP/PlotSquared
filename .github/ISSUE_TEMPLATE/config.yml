@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: IntellectualSites Github
+    url: https://github.com/IntellectualSites/PlotSquared
+    about: PLEASE POST ISSUES THERE. WE DO NOT HANDLE BUG REPORTS
   - name: IntellectualSites Discord
     url: https://discord.gg/intellectualsites
     about: Our support Discord, please ask questions and seek support here.
