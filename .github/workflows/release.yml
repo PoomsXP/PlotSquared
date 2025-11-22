@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      artifact_path: ${{ steps.artifact.outputs.file }}
       version: ${{ steps.version.outputs.version }}
+      artifact_path: ${{ steps.artifact.outputs.file }}
 
     steps:
       - name: Checkout repository
@@ -34,8 +34,9 @@ jobs:
         id: version
         run: |
           VERSION=$(grep -Po '(?<=version = ")[^"]+' build.gradle.kts | tr -d '[:space:]')
+          # Remove any accidental ${…} just in case
+          VERSION=$(echo "$VERSION" | sed 's/\$\{.*\}//g')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Extracted version: $VERSION"
 
       - name: Find Bukkit JAR artifact
@@ -58,8 +59,6 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.build.outputs.version }}
 
     steps:
       - name: Checkout repository
@@ -73,10 +72,9 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: Release v${{ needs.build.outputs.version }}
+          files: "*.jar"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ env.VERSION }}
-        with:
-          tag_name: v${{ env.VERSION }}
-          name: Release v${{ env.VERSION }}
-          files: "*.jar"
