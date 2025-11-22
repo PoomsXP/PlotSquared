@@ -1,0 +1,53 @@
+name: Sync Fork (Preserve Workflows)
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # Every 6 hours
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/ORIGINAL_OWNER/ORIGINAL_REPO.git
+          git fetch upstream
+
+      - name: Merge upstream/main but keep workflows
+        run: |
+          # Stash your workflows directory first
+          mkdir -p temp
+          cp -r .github/workflows temp/workflows
+
+          # Reset everything to upstream's main branch
+          git reset --hard upstream/main
+
+          # Restore your workflows folder
+          rm -rf .github/workflows
+          mkdir -p .github
+          cp -r temp/workflows .github/workflows
+
+          # Clean up temp folder
+          rm -rf temp
+
+      - name: Commit changes if needed
+        run: |
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync fork with upstream (preserving workflows)"
+          else
+            echo "No changes to commit."
+          fi
+
+      - name: Push changes
+        run: |
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
